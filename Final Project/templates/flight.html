@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <meta charset="utf-8">
-    <title>Travel Dashboard</title>
+    <meta charset="UTF-8">
+    <title>Flight Dashboard</title>
 
     <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
     <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet"/>
@@ -10,15 +10,19 @@
 
 <body>
 
-<h1>Travel Dashboard</h1>
+<h1>Flight + Airport Dashboard</h1>
 
 <form method="POST">
-    <input type="text" name="place" placeholder="Enter your location">
+    <input type="text" name="place" placeholder="Enter your location" required>
     <button type="submit">Search</button>
 </form>
 
 {% if error %}
 <p style="color:red;">{{ error }}</p>
+{% endif %}
+
+{% if drive_time %}
+<h3>🚗 Drive time to Boston Logan: {{ drive_time }} minutes</h3>
 {% endif %}
 
 <div style="display:flex; gap:20px; margin-top:20px;">
@@ -33,9 +37,10 @@
         {% if flights %}
             <ul>
                 {% for f in flights %}
-                    <li>
-                        ✈️ {{ f.flight }} → {{ f.destination }}
-                        ({{ f.status }})
+                    <li style="margin-bottom:10px;">
+                        ✈️ <strong>{{ f.flight }}</strong> → {{ f.destination }} <br>
+                        🏢 Terminal: {{ f.terminal }} | Gate: {{ f.gate }} <br>
+                        📡 Status: {{ f.status }}
                     </li>
                 {% endfor %}
             </ul>
@@ -54,37 +59,52 @@ const map = new mapboxgl.Map({
     zoom: 10
 });
 
+
 {% if start_lat %}
 
-const start = [{{ start_lng }}, {{ start_lat }}];
-const end = [{{ end_lng }}, {{ end_lat }}];
+const userStart = [{{ start_lng }}, {{ start_lat }}];
+const airport = [-71.0096, 42.3656];
 
-// markers
-new mapboxgl.Marker({ color: "blue" }).setLngLat(start).addTo(map);
-new mapboxgl.Marker({ color: "red" }).setLngLat(end).addTo(map);
+new mapboxgl.Marker({ color: "blue" })
+    .setLngLat(userStart)
+    .addTo(map);
 
-// route
-fetch(`https://api.mapbox.com/directions/v5/mapbox/driving/${start[0]},${start[1]};${end[0]},${end[1]}?geometries=geojson&access_token={{ mapbox_token }}`)
-.then(res => res.json())
-.then(data => {
-    const route = data.routes[0].geometry;
+new mapboxgl.Marker({ color: "red" })
+    .setLngLat(airport)
+    .addTo(map);
 
-    map.addSource('route', {
-        type: 'geojson',
-        data: { type: 'Feature', geometry: route }
+map.on("load", () => {
+
+    fetch(`https://api.mapbox.com/directions/v5/mapbox/driving/${userStart[0]},${userStart[1]};${airport[0]},${airport[1]}?geometries=geojson&access_token={{ mapbox_token }}`)
+    .then(res => res.json())
+    .then(data => {
+
+        if (!data.routes || !data.routes.length) return;
+
+        const route = data.routes[0].geometry;
+
+        map.addSource("route", {
+            type: "geojson",
+            data: {
+                type: "Feature",
+                geometry: route
+            }
+        });
+
+        map.addLayer({
+            id: "route-line",
+            type: "line",
+            source: "route",
+            paint: {
+                "line-color": "#1db7dd",
+                "line-width": 5
+            }
+        });
+
+        map.fitBounds([userStart, airport], { padding: 80 });
+
     });
 
-    map.addLayer({
-        id: 'route',
-        type: 'line',
-        source: 'route',
-        paint: {
-            'line-color': '#1db7dd',
-            'line-width': 5
-        }
-    });
-
-    map.fitBounds([start, end], { padding: 100 });
 });
 
 {% endif %}
