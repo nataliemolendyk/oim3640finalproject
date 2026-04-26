@@ -17,13 +17,13 @@ We understood the different API websites for tracking flights better and we now 
 
 ## April 25, 2026
 # What you asked
-We asked AI to ajust our html to fit our app better and we asked AI to alter our code from asking users to input their flight numbers and starting location to outputing flights from Boston with the users inputed starting location accompanied by a map with the route.
+We asked AI to ajust our html to fit our app better and we asked AI to alter our code from asking users to input their flight numbers and starting location to outputing flights from Boston with the users inputed starting location accompanied by a map with the route. We also asked AI to help change the display of flights to show the terminal, gate, flight_number, and airport name.
 
 # What AI generated
-AI generated latitude and longitude coordinates for the Boston Logan Airport as well as the get_flights_from_boston function. It also expanded the code in html to make the web application more appealing and advanced.
+AI generated latitude and longitude coordinates for the Boston Logan Airport as well as the get_flights_from_boston function. It also expanded the code in html to make the web application more appealing and advanced. This included the drive time being displayed with the terminals, gates, and status.
 
 # What you did with it 
-We used the Boston Logan Airport coordinates in the app.py to create the route from the user's starting to the airport. We also used the html code to create the map with highlighted route and starting/ending points.
+We used the Boston Logan Airport coordinates in the app.py to create the route from the user's starting to the airport. We also used the html code to create the map with highlighted route and starting/ending points. We then had the information to be sorted under headings, so the flight information would go under "Flights from Boston Logan" and the drive time would be near the map.
 
 # What you learned 
-From this, we learned that multiple functions from the flight.py have to be called in the app.py. Before using AI, we didn't understand why the app.py wasn't running correctly even though the flight.py was set up correctly. We then learned that we needed to call multiple functions because they produced different outputs.
+From this, we learned that multiple functions from the flight.py have to be called in the app.py. Before using AI, we didn't understand why the app.py wasn't running correctly even though the flight.py was set up correctly. We then learned that we needed to call multiple functions because they produced different outputs. We learned that you have to be specific with what you want AI to do because we asked AI to create the route and it create the flight route, not the driving route, so we learned to be more clear and direct with what we ask.
