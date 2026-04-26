@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request
-from flight import get_lat_lng, get_flights_from_boston, MAPBOX_TOKEN
+from flight import get_lat_lng, get_flights_from_boston, get_drive_time, MAPBOX_TOKEN
 
 app = Flask(__name__)
 
@@ -14,14 +14,16 @@ def flight_submit():
     place = request.form.get("place")
 
     if not place:
-        return render_template("flight.html", error="Enter a location")
+        return render_template("flight.html", error="Please enter a location")
 
     try:
         start_lat, start_lng = get_lat_lng(place)
 
-        # Boston Logan Airport
+        # airport (Boston Logan)
         end_lat = 42.3656
         end_lng = -71.0096
+
+        drive_time = get_drive_time(start_lat, start_lng, end_lat, end_lng)
 
         flights = get_flights_from_boston()
 
@@ -32,11 +34,11 @@ def flight_submit():
             start_lng=start_lng,
             end_lat=end_lat,
             end_lng=end_lng,
-            flights=flights,
-            place=place
+            drive_time=drive_time,
+            flights=flights
         )
 
-    except ValueError as e:
+    except Exception as e:
         return render_template("flight.html", error=str(e))
 
 
