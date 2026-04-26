@@ -1,7 +1,6 @@
 import os
 import requests
 import dotenv
-import math
 
 dotenv.load_dotenv()
 
@@ -27,6 +26,24 @@ def get_lat_lng(place_name):
     return float(lat), float(lng)
 
 
+def get_drive_time(start_lat, start_lng, end_lat, end_lng):
+    url = f"https://api.mapbox.com/directions/v5/mapbox/driving/{start_lng},{start_lat};{end_lng},{end_lat}"
+
+    params = {
+        "access_token": MAPBOX_TOKEN,
+        "overview": "false"
+    }
+
+    r = requests.get(url, params=params)
+    data = r.json()
+
+    routes = data.get("routes", [])
+    if not routes:
+        raise ValueError("No route found")
+
+    return round(routes[0]["duration"] / 60, 1)
+
+
 def get_flights_from_boston():
     url = "http://api.aviationstack.com/v1/flights"
 
@@ -43,11 +60,25 @@ def get_flights_from_boston():
         raise ValueError("No flights found")
 
     results = []
-    for f in flights[:8]:
+
+    for f in flights:
+
+        dep = f.get("departure", {})
+        arr = f.get("arrival", {})
+        flight = f.get("flight", {})
+
+        if dep.get("iata") != "BOS":
+            continue
+
         results.append({
-            "flight": f["flight"]["iata"],
-            "destination": f["arrival"]["airport"],
-            "status": f.get("flight_status")
+            "flight": flight.get("iata", "N/A"),
+            "destination": arr.get("airport", "Unknown"),
+            "terminal": dep.get("terminal", "N/A"),
+            "gate": dep.get("gate", "N/A"),
+            "status": f.get("flight_status", "unknown")
         })
+
+        if len(results) == 8:
+            break
 
     return results
