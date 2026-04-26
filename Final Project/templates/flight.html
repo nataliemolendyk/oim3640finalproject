@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Travel Dashboard</title>
+
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet"/>
+</head>
+
+<body>
+
+<h1>Travel Dashboard</h1>
+
+<form method="POST">
+    <input type="text" name="place" placeholder="Enter your location">
+    <button type="submit">Search</button>
+</form>
+
+{% if error %}
+<p style="color:red;">{{ error }}</p>
+{% endif %}
+
+<div style="display:flex; gap:20px; margin-top:20px;">
+
+    <!-- MAP -->
+    <div id="map" style="width:60%; height:500px;"></div>
+
+    <!-- FLIGHTS -->
+    <div style="width:40%;">
+        <h2>Flights from Boston Logan</h2>
+
+        {% if flights %}
+            <ul>
+                {% for f in flights %}
+                    <li>
+                        ✈️ {{ f.flight }} → {{ f.destination }}
+                        ({{ f.status }})
+                    </li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    </div>
+
+</div>
+
+<script>
+mapboxgl.accessToken = "{{ mapbox_token }}";
+
+const map = new mapboxgl.Map({
+    container: 'map',
+    style: 'mapbox://styles/mapbox/streets-v12',
+    center: [-71.05, 42.36],
+    zoom: 10
+});
+
+{% if start_lat %}
+
+const start = [{{ start_lng }}, {{ start_lat }}];
+const end = [{{ end_lng }}, {{ end_lat }}];
+
+// markers
+new mapboxgl.Marker({ color: "blue" }).setLngLat(start).addTo(map);
+new mapboxgl.Marker({ color: "red" }).setLngLat(end).addTo(map);
+
+// route
+fetch(`https://api.mapbox.com/directions/v5/mapbox/driving/${start[0]},${start[1]};${end[0]},${end[1]}?geometries=geojson&access_token={{ mapbox_token }}`)
+.then(res => res.json())
+.then(data => {
+    const route = data.routes[0].geometry;
+
+    map.addSource('route', {
+        type: 'geojson',
+        data: { type: 'Feature', geometry: route }
+    });
+
+    map.addLayer({
+        id: 'route',
+        type: 'line',
+        source: 'route',
+        paint: {
+            'line-color': '#1db7dd',
+            'line-width': 5
+        }
+    });
+
+    map.fitBounds([start, end], { padding: 100 });
+});
+
+{% endif %}
+</script>
+
+</body>
+</html>
