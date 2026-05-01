@@ -1,45 +1,50 @@
 from flask import Flask, render_template, request
-from flight import get_lat_lng, get_flights_from_boston, get_drive_time, MAPBOX_TOKEN
+from flight import (
+    get_lat_lng,
+    get_drive_time,
+    get_flights_grouped,
+    get_next_flight,
+    MAPBOX_TOKEN
+)
 
 app = Flask(__name__)
 
+BOSTON_LAT = 42.3656
+BOSTON_LNG = -71.0096
+
 
 @app.get("/flight")
-def flight_page():
-    return render_template("flight.html")
+def home():
+    return render_template("flight.html", flights={})
 
 
 @app.post("/flight")
-def flight_submit():
-    place = request.form.get("place")
+def search():
 
-    if not place:
-        return render_template("flight.html", error="Please enter a location")
+    origin = request.form.get("origin")
+    destination = request.form.get("destination")
 
-    try:
-        start_lat, start_lng = get_lat_lng(place)
+    if not origin or not destination:
+        return render_template("flight.html", flights={}, error="Missing input")
 
-        # airport (Boston Logan)
-        end_lat = 42.3656
-        end_lng = -71.0096
+    o_lat, o_lng = get_lat_lng(origin)
 
-        drive_time = get_drive_time(start_lat, start_lng, end_lat, end_lng)
+    flights = get_flights_grouped(destination)
+    next_flight = get_next_flight(flights)
 
-        flights = get_flights_from_boston()
+    drive_time = get_drive_time(o_lat, o_lng, BOSTON_LAT, BOSTON_LNG)
 
-        return render_template(
-            "flight.html",
-            mapbox_token=MAPBOX_TOKEN,
-            start_lat=start_lat,
-            start_lng=start_lng,
-            end_lat=end_lat,
-            end_lng=end_lng,
-            drive_time=drive_time,
-            flights=flights
-        )
-
-    except Exception as e:
-        return render_template("flight.html", error=str(e))
+    return render_template(
+        "flight.html",
+        mapbox_token=MAPBOX_TOKEN,
+        origin_lat=o_lat,
+        origin_lng=o_lng,
+        flights=flights,
+        next_flight=next_flight,
+        drive_time=drive_time,
+        origin=origin,
+        destination=destination
+    )
 
 
 if __name__ == "__main__":
