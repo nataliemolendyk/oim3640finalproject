@@ -4,110 +4,234 @@
     <meta charset="UTF-8">
     <title>Flight Dashboard</title>
 
+    <script src="https://cdn.tailwindcss.com"></script>
+
     <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
     <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet"/>
+
+    <style>
+        body {
+            font-family: Cambria, Georgia, serif;
+        }
+
+        /* ☁️ Soft cloud overlay */
+        .cloud-overlay {
+            position: fixed;
+            inset: 0;
+            background: url("https://www.transparenttextures.com/patterns/clouds.png");
+            opacity: 0.06;
+            z-index: -1;
+            pointer-events: none;
+            animation: drift 160s linear infinite;
+        }
+
+        @keyframes drift {
+            from { background-position: 0 0; }
+            to { background-position: 1400px 0; }
+        }
+    </style>
 </head>
 
-<body>
+<body class="min-h-screen bg-gradient-to-b from-sky-100 via-sky-50 to-white text-gray-900">
 
-<h1>Flight + Airport Dashboard</h1>
+<!-- ☁️ BACKGROUND -->
+<div class="cloud-overlay"></div>
 
-<form method="POST">
-    <input type="text" name="place" placeholder="Enter your location" required>
-    <button type="submit">Search</button>
-</form>
-
-{% if error %}
-<p style="color:red;">{{ error }}</p>
-{% endif %}
-
-{% if drive_time %}
-<h3>🚗 Drive time to Boston Logan: {{ drive_time }} minutes</h3>
-{% endif %}
-
-<div style="display:flex; gap:20px; margin-top:20px;">
-
-    <!-- MAP -->
-    <div id="map" style="width:60%; height:500px;"></div>
-
-    <!-- FLIGHTS -->
-    <div style="width:40%;">
-        <h2>Flights from Boston Logan</h2>
-
-        {% if flights %}
-            <ul>
-                {% for f in flights %}
-                    <li style="margin-bottom:10px;">
-                        ✈️ <strong>{{ f.flight }}</strong> → {{ f.destination }} <br>
-                        🏢 Terminal: {{ f.terminal }} | Gate: {{ f.gate }} <br>
-                        📡 Status: {{ f.status }}
-                    </li>
-                {% endfor %}
-            </ul>
-        {% endif %}
+<!-- HEADER -->
+<div class="bg-white/80 border-b border-gray-200 backdrop-blur-sm">
+    <div class="max-w-6xl mx-auto px-6 py-4">
+        <h1 class="text-lg font-semibold text-gray-800">
+            ✈ Flight Dashboard
+        </h1>
     </div>
-
 </div>
 
+<div class="max-w-6xl mx-auto p-6">
+
+    <!-- ✈️ NEXT DEPARTURE -->
+    {% if next_flight %}
+    <div class="bg-blue-50 border border-blue-100 rounded-xl p-5 mb-6 shadow-sm">
+
+        <div class="text-sm text-blue-600">
+            Next departure
+        </div>
+
+        <div class="text-2xl font-semibold text-blue-900 mt-1">
+            {{ next_flight.flight }}
+        </div>
+
+        <div class="text-sm text-blue-700 mt-1">
+            Status: {{ next_flight.status or "Scheduled" }}
+        </div>
+
+    </div>
+    {% endif %}
+
+    <!-- SEARCH -->
+    <form method="POST" class="bg-white border border-gray-200 p-5 rounded-xl mb-6 shadow-sm">
+
+        <div class="grid md:grid-cols-3 gap-4">
+
+            <input name="origin"
+                   value="{{ origin or '' }}"
+                   placeholder="Origin (e.g. Boston)"
+                   class="border border-gray-200 p-3 rounded focus:outline-none focus:ring-2 focus:ring-sky-300">
+
+            <input name="destination"
+                   value="{{ destination or '' }}"
+                   placeholder="Destination (e.g. Paris)"
+                   class="border border-gray-200 p-3 rounded focus:outline-none focus:ring-2 focus:ring-sky-300">
+
+            <button class="bg-sky-600 text-white rounded p-3 hover:bg-sky-500 transition">
+                Search
+            </button>
+
+        </div>
+    </form>
+
+    <!-- DRIVE TIME -->
+    {% if drive_time %}
+    <div class="bg-white border border-gray-200 rounded-xl p-5 mb-6 shadow-sm">
+        Drive time to airport:
+        <b class="text-gray-800">{{ drive_time }} min</b>
+    </div>
+    {% endif %}
+
+    <div class="grid lg:grid-cols-2 gap-6">
+
+        <!-- MAP -->
+        <div class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+
+            <div class="p-3 border-b text-sm text-gray-600">
+                Route map
+            </div>
+
+            <div id="map" class="h-[520px]"></div>
+
+        </div>
+
+        <!-- FLIGHTS -->
+        <div class="space-y-5">
+
+            {% for city, flist in flights.items() %}
+            <div class="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+
+                <!-- CITY HEADER -->
+                <div class="flex justify-between items-center mb-3">
+                    <h2 class="font-semibold text-gray-800">
+                        {{ city }}
+                    </h2>
+                    <span class="text-sm text-gray-400">
+                        {{ flist|length }} flights
+                    </span>
+                </div>
+
+                <!-- FLIGHT LIST -->
+                <div class="divide-y divide-gray-100">
+
+                    {% for f in flist %}
+                    <div class="py-3 flex justify-between items-center">
+
+                        <!-- FLIGHT NUMBER -->
+                        <div class="font-medium text-gray-900">
+                            {{ f.flight }}
+                        </div>
+
+                        <!-- STATUS BADGE -->
+                        <div class="text-xs px-2 py-1 rounded
+                            {% if f.status and 'delay' in f.status|lower %}
+                                bg-red-100 text-red-600
+                            {% elif f.status and 'active' in f.status|lower %}
+                                bg-green-100 text-green-700
+                            {% else %}
+                                bg-gray-100 text-gray-600
+                            {% endif %}
+                        ">
+                            {{ f.status or "Scheduled" }}
+                        </div>
+
+                    </div>
+                    {% endfor %}
+
+                </div>
+
+            </div>
+            {% endfor %}
+
+        </div>
+
+    </div>
+</div>
+
+<!-- MAP SCRIPT -->
 <script>
 mapboxgl.accessToken = "{{ mapbox_token }}";
 
-const map = new mapboxgl.Map({
-    container: 'map',
-    style: 'mapbox://styles/mapbox/streets-v12',
-    center: [-71.05, 42.36],
-    zoom: 10
-});
+if ("{{ origin_lat }}") {
 
+    const origin = [{{ origin_lng }}, {{ origin_lat }}];
+    const airport = [-71.0096, 42.3656];
 
-{% if start_lat %}
-
-const userStart = [{{ start_lng }}, {{ start_lat }}];
-const airport = [-71.0096, 42.3656];
-
-new mapboxgl.Marker({ color: "blue" })
-    .setLngLat(userStart)
-    .addTo(map);
-
-new mapboxgl.Marker({ color: "red" })
-    .setLngLat(airport)
-    .addTo(map);
-
-map.on("load", () => {
-
-    fetch(`https://api.mapbox.com/directions/v5/mapbox/driving/${userStart[0]},${userStart[1]};${airport[0]},${airport[1]}?geometries=geojson&access_token={{ mapbox_token }}`)
-    .then(res => res.json())
-    .then(data => {
-
-        if (!data.routes || !data.routes.length) return;
-
-        const route = data.routes[0].geometry;
-
-        map.addSource("route", {
-            type: "geojson",
-            data: {
-                type: "Feature",
-                geometry: route
-            }
-        });
-
-        map.addLayer({
-            id: "route-line",
-            type: "line",
-            source: "route",
-            paint: {
-                "line-color": "#1db7dd",
-                "line-width": 5
-            }
-        });
-
-        map.fitBounds([userStart, airport], { padding: 80 });
-
+    const map = new mapboxgl.Map({
+        container: "map",
+        style: "mapbox://styles/mapbox/light-v11",
+        center: origin,
+        zoom: 7
     });
 
-});
+    // Markers
+    new mapboxgl.Marker({ color: "#0f172a" })
+        .setLngLat(origin)
+        .addTo(map);
 
-{% endif %}
+    new mapboxgl.Marker({ color: "#2563eb" })
+        .setLngLat(airport)
+        .addTo(map);
+
+    map.on("load", () => {
+
+        fetch(
+            `https://api.mapbox.com/directions/v5/mapbox/driving/` +
+            `${origin[0]},${origin[1]};${airport[0]},${airport[1]}` +
+            `?geometries=geojson&access_token={{ mapbox_token }}`
+        )
+        .then(res => res.json())
+        .then(data => {
+
+            if (!data.routes || !data.routes.length) return;
+
+            const route = data.routes[0].geometry;
+
+            // Add route source
+            map.addSource("route", {
+                type: "geojson",
+                data: {
+                    type: "Feature",
+                    geometry: route
+                }
+            });
+
+            // Route line layer
+            map.addLayer({
+                id: "route-line",
+                type: "line",
+                source: "route",
+                paint: {
+                    "line-color": "#38bdf8",
+                    "line-width": 4,
+                    "line-opacity": 0.9
+                }
+            });
+
+            // Fit map to route
+            const bounds = new mapboxgl.LngLatBounds();
+            route.coordinates.forEach(coord => bounds.extend(coord));
+            map.fitBounds(bounds, { padding: 70 });
+
+        });
+
+    });
+}
 </script>
 
 </body>
